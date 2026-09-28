@@ -12,8 +12,8 @@ const page = () => {
         title : "",
         description : "",
         category : "startup",
-        author : "alex bannett",
-        authorImg : "/author_img.png"
+        author : "Amine Moussouni",
+        authorImg : "/authorimg.png"
     })
     const onChangeHandler = (e) =>{
         const name = e.target.name;

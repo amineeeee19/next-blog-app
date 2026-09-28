@@ -2,7 +2,6 @@
 
 import { useSession, signIn } from "next-auth/react";
 import { useState } from "react";
-
 export const dynamic = 'force-dynamic';
 
 const AdminPage = () => {
