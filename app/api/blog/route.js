@@ -1,42 +1,72 @@
 import { connectDB } from "../../../lib/config/db";
-import { writeFile } from "fs/promises";
 import BlogModel from "../../../lib/models/blogModel";
-import path from "path";
 import { NextResponse } from "next/server";
-import fs from "fs";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../lib/authOptions";
+import { v2 as cloudinary } from "cloudinary";
+
+export const runtime = "nodejs";
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 let dbReady = connectDB().catch((err) => {
   console.error("DB connection failed:", err);
 });
 
+// upload buffer -> Cloudinary
+function uploadToCloudinary(buffer) {
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader
+      .upload_stream({ folder: "blogs" }, (error, result) => {
+        if (error) reject(error);
+        else resolve(result);
+      })
+      .end(buffer);
+  });
+}
+
+// https://res.cloudinary.com/.../upload/v123/blogs/abc.jpg -> blogs/abc
+function getPublicId(url) {
+  const match = url.match(/\/upload\/(?:v\d+\/)?(.+)\.[a-zA-Z0-9]+$/);
+  return match ? match[1] : null;
+}
+
 export async function GET(request) {
-  const blogId = request.nextUrl.searchParams.get("id")
-   if(blogId){
-   const blog = await BlogModel.findById(blogId)
-   return NextResponse.json(blog)
-   }else{
-    
+  await dbReady;
+  const blogId = request.nextUrl.searchParams.get("id");
+  if (blogId) {
+    const blog = await BlogModel.findById(blogId);
+    return NextResponse.json(blog);
+  } else {
     const blogs = await BlogModel.find({});
     return NextResponse.json({ blogs });
-  
   }
 }
 
-export async function DELETE(request){
+export async function DELETE(request) {
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ msg: "Unauthorized" }, { status: 401 });
   }
 
-  const id = await request.nextUrl.searchParams.get('id')
-  const blog = await BlogModel.findById(id)
-  fs.unlink(`./public${blog.image}`,()=>{})
-  await BlogModel.findByIdAndDelete(id);
-  return NextResponse.json({msg:'Blog Deleted'})
-}
+  await dbReady;
+  const id = request.nextUrl.searchParams.get("id");
+  const blog = await BlogModel.findById(id);
 
+  if (blog?.image?.includes("res.cloudinary.com")) {
+    const publicId = getPublicId(blog.image);
+    if (publicId) {
+      await cloudinary.uploader.destroy(publicId).catch(() => {});
+    }
+  }
+
+  await BlogModel.findByIdAndDelete(id);
+  return NextResponse.json({ msg: "Blog Deleted" });
+}
 
 export async function POST(request) {
   try {
@@ -53,18 +83,9 @@ export async function POST(request) {
     let imgUrl = "";
 
     if (image && typeof image !== "string" && image.size > 0) {
-      const timestamp = Date.now();
-      const safeName = path
-        .basename(image.name)
-        .replace(/[^a-zA-Z0-9._-]/g, "_");
-      const fileName = `${timestamp}_${safeName}`;
-      const filePath = path.join(process.cwd(), "public", fileName);
-
-      const imageByData = await image.arrayBuffer();
-      const buffer = Buffer.from(imageByData);
-      await writeFile(filePath, buffer);
-
-      imgUrl = `/${fileName}`;
+      const buffer = Buffer.from(await image.arrayBuffer());
+      const result = await uploadToCloudinary(buffer);
+      imgUrl = result.secure_url;
     }
 
     const blogData = {
@@ -77,7 +98,6 @@ export async function POST(request) {
     };
 
     await BlogModel.create(blogData);
-    console.log("blog saved");
 
     return NextResponse.json({ success: true, msg: "blog added" });
   } catch (err) {
