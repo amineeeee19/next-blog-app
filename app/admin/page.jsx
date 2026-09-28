@@ -2,7 +2,6 @@
 
 import { useSession, signIn } from "next-auth/react";
 import { useState } from "react";
-export const dynamic = 'force-dynamic';
 
 const AdminPage = () => {
   const { data: session, status } = useSession();
@@ -13,7 +12,11 @@ const AdminPage = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
-    const res = await signIn("credentials", { email, password, redirect: false });
+    const res = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
     if (res.error) {
       setError("Email ou mot de passe incorrect");
     }
@@ -30,7 +33,10 @@ const AdminPage = () => {
   if (!session) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <form onSubmit={handleLogin} className="border p-8 rounded shadow-md w-[350px] bg-white">
+        <form
+          onSubmit={handleLogin}
+          className="border p-8 rounded shadow-md w-[350px] bg-white"
+        >
           <h1 className="text-xl font-semibold mb-4">Admin Login</h1>
           {error && <p className="text-red-500 mb-3 text-sm">{error}</p>}
           <input
@@ -49,7 +55,10 @@ const AdminPage = () => {
             className="border w-full p-2 mb-3 rounded"
             required
           />
-          <button type="submit" className="bg-black text-white w-full py-2 rounded">
+          <button
+            type="submit"
+            className="bg-black text-white w-full py-2 rounded"
+          >
             Login
           </button>
         </form>
