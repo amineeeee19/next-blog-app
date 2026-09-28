@@ -103,7 +103,7 @@ export async function POST(request) {
   } catch (err) {
     console.error("Upload error:", err);
     return NextResponse.json(
-      { success: false, error: "Something went wrong while adding the blog" },
+      { success: false, error: err?.message || String(err) },
       { status: 500 },
     );
   }
