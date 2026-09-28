@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { blog_data } from "../Assets/assets";
-import BlogItem from "./blogitem";
+import BlogItem from "./blogItem";
 import axios from "axios";
 
 const BlogList = () => {
