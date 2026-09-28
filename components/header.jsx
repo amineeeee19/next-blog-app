@@ -27,7 +27,6 @@ const Header = () => {
           className="w-[130px] sm:w-auto"
           alt=""
         />
-        <button className="flex items-center gap-2 font-medium py-1 px-3 sm:py-3 sm:px-6 border border-solid  shadow-[-5px_7px_0px_#000000]">get started</button>
       </div>
       <div className="text-center my-4"> 
         <h1 className="text-4xl font-semibold ">Latest Blogs</h1>
